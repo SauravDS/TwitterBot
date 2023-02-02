@@ -1,28 +1,30 @@
 import tweepy
+import helpers
+import reply_message
+from config import TWITTER_API_KEY, TWITTER_API_SECRET_KEY, TWITTER_ACCESS_TOKEN, TWITTER_ACCESS_TOKEN_SECRET
 
-# Twitter API credentials
-consumer_key = "your_consumer_key"
-consumer_secret = "your_consumer_secret"
-access_token = "your_access_token"
-access_token_secret = "your_access_token_secret"
+# set the keyword to search for in tweets
+KEYWORD = "Aadani Eterprise"
 
-# Authenticate with Twitter API
-auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-auth.set_access_token(access_token, access_token_secret)
+# authenticate to the Twitter API using tweepy
+def authenticate():
+    api = helpers.get_api()
+    return api
 
-# Initialize tweepy API
-api = tweepy.API(auth)
+# search for tweets containing the keyword
+def search_tweets(api, keyword):
+    return tweepy.Cursor(api.search_tweets, q=keyword, tweet_mode='extended').items(10)
 
-# Search for tweets containing the keyword
-tweets = api.search(q="keyword", tweet_mode="extended")
+# main function
+def main():
+    api = authenticate()
+    tweets = search_tweets(api, KEYWORD)
 
-# Reply to each tweet containing the keyword
-for tweet in tweets:
-    username = tweet.user.screen_name
-    status_id = tweet.id
+    for tweet in tweets:
+        if not tweet.retweeted and not tweet.in_reply_to_status_id:
+            if helpers.tweet_contains_keyword(tweet, KEYWORD):
+                message = reply_message.get_reply_message()
+                helpers.reply_to_tweet(api, tweet, message)
 
-    # Compose the reply
-    reply = "@" + username + " thank you for mentioning the keyword!"
-
-    # Post the reply
-    api.update_status(status=reply, in_reply_to_status_id=status_id)
+if __name__ == '__main__':
+    main()
